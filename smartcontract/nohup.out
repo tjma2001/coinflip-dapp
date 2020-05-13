@@ -1,0 +1,16 @@
+12:25:01.908 › Checking for update
+(node:22018) DeprecationWarning: Passing functions, DOM objects and other non-cloneable JavaScript objects to IPC methods is deprecated and will throw an exception beginning with Electron 9.
+(node:22018) DeprecationWarning: Passing functions, DOM objects and other non-cloneable JavaScript objects to IPC methods is deprecated and will throw an exception beginning with Electron 9.
+listen to truffle
+12:25:11.152 › Found version 2.4.0 (url: ganache-2.4.0-linux-x86_64.AppImage)
+eth_unsubscribe
+eth_unsubscribe
+
+eth_unsubscribe
+
+eth_unsubscribe
+eth_unsubscribe
+
+eth_unsubscribe
+eth_unsubscribe
+
