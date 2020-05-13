@@ -3,7 +3,7 @@ var contractInstance;
 
 $(document).ready(function () {
 	window.ethereum.enable().then(function (accounts) {
-		contractInstance = new web3.eth.Contract(abi, "0x3b319Bc3929a1CBab3a22994090b6ba758995B28", {
+		contractInstance = new web3.eth.Contract(abi, "0xca2Fe1fdb6CB2b21e90D4826B9CC7d07aCc2e4fd", {
 			from: accounts[0]
 		});
 
@@ -31,7 +31,6 @@ function receipt(receipt) {
 	} else {
 		$("#result").text(`Sorry. you didn't win anything this time.`);
 	}
-	console.log('winnings', winnings);
 }
 
 function flip(coinFace) {

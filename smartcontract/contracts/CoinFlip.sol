@@ -3,6 +3,7 @@ pragma solidity 0.5.12;
 
 contract CoinFlip {
     uint256 public balance;
+    uint256 public prevBalance;
 
     modifier costs(uint256 cost) {
         require(msg.value >= cost);
@@ -10,6 +11,7 @@ contract CoinFlip {
     }
 
     event coinTossed(uint256 result, uint256 winnings);
+    event transferFailed();
 
     function getResult(uint256 coinFace, uint256 randomValue, uint256 betValue)
         public
@@ -33,11 +35,16 @@ contract CoinFlip {
         return now % 2;
     }
 
-    function payOut(uint256 payoutValue, address payoutAddress) public {
-        if (payoutValue > 0 && payoutValue >= balance) {
+    function payOut(uint256 payoutValue, address payoutAddress)
+        public
+        returns (bool)
+    {
+        if (payoutValue > 0 && payoutValue <= prevBalance) {
             (bool success, ) = payoutAddress.call.value(payoutValue)("");
             require(success, "Sending failed");
+            return success;
         }
+        return false;
     }
 
     function tossCoin(uint256 coinFace)
@@ -51,11 +58,17 @@ contract CoinFlip {
         uint256 result = getRandomValue();
 
         uint256 toTransfer = getResult(coinFace, result, msg.value);
+        prevBalance = balance;
         balance = balance - toTransfer;
 
-        payOut(toTransfer, msg.sender);
+        bool status = payOut(toTransfer, msg.sender);
 
-        emit coinTossed(result, toTransfer);
+        if (!status) {
+            balance = prevBalance;
+            emit transferFailed();
+        } else {
+            emit coinTossed(result, toTransfer);
+        }
 
         return toTransfer;
     }

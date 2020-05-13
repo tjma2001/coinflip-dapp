@@ -14,10 +14,6 @@ contract("CoinFlip", async function (accounts) {
     let instance = await CoinFlip.deployed();
     await truffleAssert.passes(instance.payOut(0, accounts[0]));
   });
-  it("Should not payout - payout too high", async function () {
-    let instance = await CoinFlip.deployed();
-    await truffleAssert.fails(instance.payOut(100, accounts[0]), truffleAssert.ErrorType.REVERT);
-  });
   it("Should not crash", async function () {
     let instance = await CoinFlip.deployed();
     await truffleAssert.passes(instance.tossCoin(1, {
