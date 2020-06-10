@@ -1,9 +1,23 @@
+import "./provableAPI.sol";
+
 pragma solidity 0.5.12;
 
 
-contract CoinFlip {
+contract CoinFlip is usingProvable {
+    enum State { processing, complete }
+
+    struct User {
+        uint256 balance;
+        State state;
+        string name;
+        uint256 requestId;
+        address userAddress;
+    }
+
     uint256 public balance;
     uint256 public prevBalance;
+    mapping(address => User) users;
+    mapping(uint256 => address) requests;
 
     modifier costs(uint256 cost) {
         require(msg.value >= cost);
@@ -12,6 +26,17 @@ contract CoinFlip {
 
     event coinTossed(uint256 result, uint256 winnings);
     event transferFailed();
+
+    /**
+        this function is called by the oracle to give us the result of our transaction
+     */
+    function callback() {
+
+    }
+
+    function createRequest(User user) {
+        
+    }
 
     function getResult(uint256 coinFace, uint256 randomValue, uint256 betValue)
         public
@@ -31,6 +56,17 @@ contract CoinFlip {
         return 0;
     }
 
+    function getUser(address userAddress) returns User {
+        User user = users[address];
+        if (!user) {
+            user.userAddress = userAddress;
+            user.balance = 0;
+            user.state = State.complete;
+            users[address] = user;
+        }
+        return user;
+    }
+
     function getRandomValue() private view returns (uint256) {
         return now % 2;
     }
@@ -47,12 +83,18 @@ contract CoinFlip {
         return false;
     }
 
+    function testRandom() public returns(bytes32) {
+        bytes32 queryId = bytes32(keccak256("test"))
+    }
+
     function tossCoin(uint256 coinFace)
         public
         payable
         costs(1 wei)
         returns (uint256)
     {
+        User user = getUser(msg.sender);
+
         balance += msg.value;
 
         uint256 result = getRandomValue();
