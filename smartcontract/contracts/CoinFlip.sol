@@ -23,15 +23,22 @@ contract CoinFlip is usingProvable {
     mapping(bytes32 => address) requests;
 
     event LogNewProvableQuery(string description);
-    event generatedRandomNumber(bool isHeads, address userAddress);
-    event gotCallbackResponse(bytes32 queryId);
-    event message(string message);
-    event result(uint256 amount);
-    event transferFailed();
+    event GeneratedRandomNumber(
+        bool isHeads,
+        uint256 number,
+        address userAddress
+    );
+    event GotCallbackResponse(bytes32 queryId);
+    event Message(string message);
+    event Result(uint256 amount);
 
     modifier costs(uint256 cost) {
         require(msg.value >= cost);
         _;
+    }
+
+    constructor() public payable {
+        require(msg.value == 0.1 ether, "0.1 ether required to fund contract");
     }
 
     /**
@@ -40,22 +47,23 @@ contract CoinFlip is usingProvable {
     function __callback(bytes32 _queryId, string memory _result) public {
         require(msg.sender == provable_cbAddress());
 
-        emit gotCallbackResponse(_queryId);
+        emit GotCallbackResponse(_queryId);
 
-        bool isHeads = uint256(keccak256(abi.encodePacked(_result))) > 127;
+        bool isHeads = uint256(keccak256(abi.encodePacked(_result))) % 255 > 127;
 
         require(
             users[requests[_queryId]].userAddress != address(0),
             "Invalid user address"
         );
 
-        emit generatedRandomNumber(
+        emit GeneratedRandomNumber(
             isHeads,
+            uint256(keccak256(abi.encodePacked(_result))) % 255,
             users[requests[_queryId]].userAddress
         );
 
         if (users[requests[_queryId]].isHeads == isHeads) {
-            emit result(users[requests[_queryId]].betAmount);
+            emit Result(users[requests[_queryId]].betAmount);
 
             (, users[requests[_queryId]].lastPayoutAmount) = payOut(
                 calculatePayout(
@@ -65,7 +73,7 @@ contract CoinFlip is usingProvable {
                 users[requests[_queryId]].userAddress
             );
         } else {
-            emit result(users[requests[_queryId]].betAmount);
+            emit Result(users[requests[_queryId]].betAmount);
             users[requests[_queryId]].lastPayoutAmount = 0;
         }
         users[requests[_queryId]].state = State.complete;
@@ -143,9 +151,13 @@ contract CoinFlip is usingProvable {
         }
 
         if (users[msg.sender].state == State.processing) {
-            emit message("Still Processing");
-            return true;
+            emit Message("Still Processing old bet. Overriding with new bet");
+            // return true;
         }
+
+        emit Message(
+            coinFace > 127 ? "Flipping for heads" : "Flipping for tails"
+        );
 
         balance += msg.value;
 
@@ -154,7 +166,7 @@ contract CoinFlip is usingProvable {
         users[msg.sender].isHeads = coinFace > 127;
         users[msg.sender].state = State.processing;
 
-        createRequest(users[msg.sender].userAddress);
+        createRequest(msg.sender);
 
         return true;
     }

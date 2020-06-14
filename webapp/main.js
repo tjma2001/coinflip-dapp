@@ -24,12 +24,13 @@ const lock = new Proxy(lockObject, {
 
 $(document).ready(function () {
   console.log("document ready");
+
   window.ethereum
     .enable()
     .then(async function (accounts) {
       contractInstance = new web3.eth.Contract(
         abi,
-        "0xa2495C7cc490a98f67451458404CC80BE698a7E0", {
+        "0xC6e623B76B19A828dcC3b2934DAc6824085102B2", {
           from: accounts[0],
         }
       );
@@ -50,7 +51,12 @@ $(document).ready(function () {
   $("#bet_amount").val(100);
   $("#heads_button").on("click", () => flip(128));
   $("#tails_button").on("click", () => flip(1));
+  $("#reset").on('click', reset);
 });
+
+function error(error) {
+  console.log('error', error)
+}
 
 // Checks the smart contract for an existing ongoing bet
 async function isBetComplete() {
@@ -77,8 +83,11 @@ function flip(coinFace) {
 
     var config = {
       value: web3.utils.toWei(value, denomination),
-      gas: 5500000,
-      // gasPrice: 20000000000,
+      // gasLimit: web3.utils.toHex('21000'),
+      // gasPrice: web3.utils.toHex('20000000000'),
+      gas: 1000000,
+      gasPrice: '20000000000'
+
     };
 
     console.log("config", config);
@@ -87,8 +96,11 @@ function flip(coinFace) {
       .tossCoin(coinFace)
       .send(config)
       .on("transactionHash", sent)
-      .on("receipt", receipt);
-  } catch {}
+      .on("receipt", receipt)
+      .on("error", error);
+  } catch (error) {
+    console.error('caught error', error)
+  }
 }
 
 function sent(hash) {
@@ -102,8 +114,10 @@ async function processOnGoingBet() {
   //perform Check in smart contract to see if we got a result
   console.log("processing bet");
   if (await isBetComplete()) {
-    const winnings = await contractInstance.methods.getWinnings();
+    const winnings = await contractInstance.methods.getWinnings().call();
+    console.log('winnings', winnings);
     alert(`you won ${winnings}`);
+
     lock.status = false;
     return;
   }
@@ -114,23 +128,9 @@ async function processOnGoingBet() {
 }
 
 async function receipt(receipt) {
-  await processOnGoingBet();
-  return;
+  processOnGoingBet();
+}
 
-  $("#heads_button").prop("disabled", false);
-  $("#tails_button").prop("disabled", false);
-  const winnings = receipt.events.coinTossed.returnValues.winnings;
-  const denomination = $("#bet_denomination").val();
-
-  if (winnings !== "0") {
-    $("#result").text(
-      `Hey, you won ${
-        denomination === "ether"
-          ? web3.utils.fromWei(winnings, "ether")
-          : winnings
-      } ${denomination}`
-    );
-  } else {
-    $("#result").text(`Sorry. you didn't win anything this time.`);
-  }
+async function reset() {
+  await contractInstance.methods.clearTransaction().call();
 }
